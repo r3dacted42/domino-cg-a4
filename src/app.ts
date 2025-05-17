@@ -5,6 +5,7 @@ import { DynamicNode, SceneGraphNode } from './lib/physics/scenegraph';
 import { Sphere } from './lib/physics/sphere';
 import $ from 'jquery';
 import { buildSerpentineDominoCourse } from './buildCourse';
+import { LightingManager } from './lib/lighting';
 
 export class App {
     canvas: HTMLCanvasElement;
@@ -18,6 +19,8 @@ export class App {
 
     clock: THREE.Clock;
     sceneGraph: SceneGraphNode;
+
+    lightingManager: LightingManager;
 
     constructor() {
         this.canvas = $("#main-canvas")[0] as HTMLCanvasElement;
@@ -43,8 +46,11 @@ export class App {
 
         this.clock = new THREE.Clock();
         this.sceneGraph = new SceneGraphNode();
-        
-        this.setupLighting();
+
+        this.lightingManager = new LightingManager(this.scene);
+
+        this.setupKeyBindings();
+
         this.populateScene();
 
         this.animate();
@@ -66,20 +72,15 @@ export class App {
         requestAnimationFrame(() => this.animate());
     }
 
-    setupLighting() {
-        this.scene.add(new THREE.AmbientLight(new THREE.Color(0xffffff), 0.5));
-
-        const dirLight = new THREE.DirectionalLight(new THREE.Color(0xfeffef), 1);
-        dirLight.position.set(-15, 10, 15);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        const size = 20;
-        dirLight.shadow.camera.left = -size;
-        dirLight.shadow.camera.right = size;
-        dirLight.shadow.camera.top = size;
-        dirLight.shadow.camera.bottom = -size;
-        this.scene.add(dirLight);
+    setupKeyBindings() {
+        $(document).on('keydown', (e) => {
+            if (e.key === 'p') {
+                this.lightingManager.togglePointLight();
+            }
+            if (e.key === 's') {
+                this.lightingManager.toggleSpotLight();
+            }
+        });
     }
 
     populateScene() {
