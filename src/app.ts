@@ -4,7 +4,7 @@ import { OrbitalCamera } from './lib/cameras/orbitalcam';
 import { DynamicNode, SceneGraphNode } from './lib/physics/scenegraph';
 import { Sphere } from './lib/physics/sphere';
 import $ from 'jquery';
-import { Domino } from './lib/physics/domino';
+import { buildSerpentineDominoCourse } from './buildCourse';
 
 export class App {
     canvas: HTMLCanvasElement;
@@ -43,6 +43,8 @@ export class App {
 
         this.clock = new THREE.Clock();
         this.sceneGraph = new SceneGraphNode();
+        
+        this.setupLighting();
         this.populateScene();
 
         this.animate();
@@ -64,7 +66,7 @@ export class App {
         requestAnimationFrame(() => this.animate());
     }
 
-    populateScene() {
+    setupLighting() {
         this.scene.add(new THREE.AmbientLight(new THREE.Color(0xffffff), 0.5));
 
         const dirLight = new THREE.DirectionalLight(new THREE.Color(0xfeffef), 1);
@@ -72,8 +74,15 @@ export class App {
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 1024;
         dirLight.shadow.mapSize.height = 1024;
+        const size = 20;
+        dirLight.shadow.camera.left = -size;
+        dirLight.shadow.camera.right = size;
+        dirLight.shadow.camera.top = size;
+        dirLight.shadow.camera.bottom = -size;
         this.scene.add(dirLight);
+    }
 
+    populateScene() {
         const floor = new THREE.Mesh(
             new THREE.PlaneGeometry(50, 50),
             new THREE.MeshStandardMaterial({ color: new THREE.Color(0xafafaf) })
@@ -85,37 +94,24 @@ export class App {
 
         this.activeCamera.position.set(0, 5, 5);
 
+        const initDirection = new THREE.Vector3(1, 0, 0);
         const sphere = new Sphere(
-            new THREE.Vector3(1, 0, 0),
+            initDirection,
             new THREE.MeshStandardMaterial({
                 color: new THREE.Color(0xff0000),
             }),
         );
+        sphere.mesh.position.set(-5, 0, 0);
         this.add(sphere);
 
-        const dominoStandingMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0x00ff00),
-        });
-        const dominoFallenMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0x00aa00),
-        });
-
-        const domino1 = new Domino(
-            new THREE.Vector3(1, 0, 0), dominoStandingMat, dominoFallenMat,
+        const chain = buildSerpentineDominoCourse(
+            this.scene,
+            this.sceneGraph,
+            new THREE.Vector3(1, 0, 0),
+            initDirection,
         );
-        domino1.setPosition(3, 0, 0);
-        this.add(domino1);
-        sphere.addCollidable(domino1);
-
-        const domino2 = new Domino(
-            new THREE.Vector3(1, 0, 0), dominoStandingMat, dominoFallenMat,
-        );
-        domino2.setPosition(4, 0, 0);
-        this.add(domino2);
-        domino1.addCollidable(domino2);
+        sphere.addCollidable(chain[0]);
 
         sphere.roll();
-
-        this.activeCamera.lookAt(domino1.mesh.position);
     }
 }

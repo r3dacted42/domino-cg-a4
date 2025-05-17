@@ -5,7 +5,7 @@ import { Domino } from "./domino";
 import { UP } from "../constants";
 
 const radius = 1;
-const rollOmega = 0.5; // radians/sec
+const rollOmega = 1.5; // radians/sec
 
 export class Sphere extends DynamicNode {
     collided: boolean = false;
