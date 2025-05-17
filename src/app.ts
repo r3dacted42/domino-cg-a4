@@ -21,6 +21,8 @@ export class App {
     sceneGraph: SceneGraphNode;
 
     lightingManager: LightingManager;
+    activeDomino: DynamicNode | null = null;
+    sphere: Sphere | null = null;
 
     constructor() {
         this.canvas = $("#main-canvas")[0] as HTMLCanvasElement;
@@ -68,8 +70,39 @@ export class App {
     animate() {
         this.renderer.render(this.scene, this.activeCamera);
         this.activeCamera.update();
+        
+        // Update spotlight to track the current active object (sphere or active domino)
+        this.updateActiveObject();
+        
         this.sceneGraph.update(this.clock.getDelta());
         requestAnimationFrame(() => this.animate());
+    }
+    
+    updateActiveObject() {
+        // If sphere is not null and not collided, it's the active object
+        if (this.sphere && !this.sphere.collided) {
+            this.lightingManager.setTrackingObject(this.sphere.mesh);
+        } else {
+            // Find dominoes that are currently toppling but not fallen
+            // Focus on the most recently started one (the one that just began falling)
+            const topplingDominoes = this.sceneGraph.children.filter(node => 
+                node instanceof DynamicNode && 
+                node.mesh.userData['domino'] && 
+                node.mesh.userData['domino'].toppling && 
+                !node.mesh.userData['domino'].fallen
+            );
+            
+            if (topplingDominoes.length > 0) {
+                // Prioritize dominoes that have just started falling
+                // In the domino effect, this would typically be the last one in the chain
+                this.lightingManager.setTrackingObject((topplingDominoes[topplingDominoes.length - 1] as DynamicNode).mesh);
+            } else {
+                this.lightingManager.setTrackingObject(null);
+            }
+        }
+        
+        // Update the tracking spotlight to point at the active object
+        this.lightingManager.updateTrackingSpotlight();
     }
 
     setupKeyBindings() {
@@ -79,6 +112,9 @@ export class App {
             }
             if (e.key === 's') {
                 this.lightingManager.toggleSpotLight();
+            }
+            if (e.key === 't') {
+                this.lightingManager.toggleTrackingSpotlight();
             }
         });
     }
@@ -104,6 +140,10 @@ export class App {
         );
         sphere.mesh.position.set(-5, 0, 0);
         this.add(sphere);
+        this.sphere = sphere;
+        
+        // Set initial tracking object to be the sphere
+        this.lightingManager.setTrackingObject(sphere.mesh);
 
         const chain = buildSerpentineDominoCourse(
             this.scene,
