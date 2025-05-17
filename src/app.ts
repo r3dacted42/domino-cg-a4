@@ -116,6 +116,9 @@ export class App {
             if (e.key === 't') {
                 this.lightingManager.toggleTrackingSpotlight();
             }
+            if (e.key === 'h') {
+                this.lightingManager.toggleHelpers();
+            }
         });
     }
 
