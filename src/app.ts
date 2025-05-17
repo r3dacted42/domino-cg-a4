@@ -105,6 +105,7 @@ export class App {
         );
         domino1.setPosition(3, 0, 0);
         this.add(domino1);
+        sphere.addCollidable(domino1);
 
         const domino2 = new Domino(
             new THREE.Vector3(1, 0, 0), dominoStandingMat, dominoFallenMat,
@@ -113,7 +114,6 @@ export class App {
         this.add(domino2);
         domino1.addCollidable(domino2);
 
-        sphere.addCollidable(domino1);
         sphere.roll();
 
         this.activeCamera.lookAt(domino1.mesh.position);
