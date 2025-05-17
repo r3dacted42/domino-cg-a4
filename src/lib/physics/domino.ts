@@ -8,7 +8,6 @@ const width = 0.8;
 const height = 2;
 const depth = 0.3;
 const toppleOmega = 0.5; // radians/sec
-const haltTheta = 5 * Math.PI / 12;
 
 const raycaster = new Raycaster();
 
