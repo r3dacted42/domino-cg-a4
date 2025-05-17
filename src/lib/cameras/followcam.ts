@@ -3,7 +3,6 @@ import { OrbitalCamera } from './orbitalcam';
 
 export class FollowCamera extends OrbitalCamera {
     private target: undefined | THREE.Object3D;
-    private lastTargetPos: undefined | THREE.Vector3;
     private offset: THREE.Vector3 = new THREE.Vector3(0, 2, 5); // Default offset: above and behind
     private rotationAngle: number = 0; // Current rotation around vertical axis
     
@@ -28,7 +27,6 @@ export class FollowCamera extends OrbitalCamera {
         // Set the target position we want to move to
         if (newTarget) {
             this.targetPosition.copy(newTarget.position);
-            this.lastTargetPos = newTarget.position.clone();
         }
         
         // Calculate the desired offset with current rotation
@@ -72,9 +70,6 @@ export class FollowCamera extends OrbitalCamera {
         
         // Look at the current target position
         this.lookAt(this.currentTargetPosition);
-        
-        // Update last target position for next frame
-        this.lastTargetPos = this.target.position.clone();
     }
 
     override update() {
