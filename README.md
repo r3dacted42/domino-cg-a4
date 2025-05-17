@@ -66,3 +66,20 @@ mechanism
 follows the (translation) motion of the object. The camera can be rotated about a
 vertical axis through user commands.
 3. Controls allow switching between the camera modes.
+
+---
+
+## Camera Controls
+
+1. **Orbital Camera (Default)**: A camera located above the scene that can be rotated using trackball mechanism.
+   - Left-click drag to rotate
+   - Right-click drag to pan
+   - Scroll to zoom
+
+2. **Follow Camera**: A camera fixed a small distance above one of the moving objects that follows its translation motion.
+   - The camera follows the active object (either the rolling sphere or the most recently toppling domino)
+   - Use A/D or Left/Right Arrow keys to rotate around the vertical axis
+
+### Switching Between Cameras
+- Press the 'C' key to toggle between the Orbital Camera and Follow Camera
+

@@ -13,7 +13,7 @@ export class App {
     scene: THREE.Scene;
     renderer: THREE.WebGLRenderer;
 
-    activeCamera: OrbitalCamera;
+    activeCamera: OrbitalCamera | FollowCamera;
 
     topCamera: OrbitalCamera;
     followCamera: FollowCamera;
@@ -24,6 +24,9 @@ export class App {
     lightingManager: LightingManager;
     activeDomino: DynamicNode | null = null;
     sphere: Sphere | null = null;
+    
+    // Track if follow camera is active
+    isFollowCameraActive: boolean = false;
 
     constructor() {
         this.canvas = $("#main-canvas")[0] as HTMLCanvasElement;
@@ -52,7 +55,7 @@ export class App {
 
         this.lightingManager = new LightingManager(this.scene);
 
-        // this.setupKeyBindings();
+        this.setupKeyBindings();
         setupControls(this);
 
         this.populateScene();
@@ -84,6 +87,11 @@ export class App {
         // If sphere is not null and not collided, it's the active object
         if (this.sphere && !this.sphere.collided) {
             this.lightingManager.setTrackingObject(this.sphere.mesh);
+            
+            // Update follow camera target if in follow mode
+            if (this.isFollowCameraActive) {
+                this.followCamera.setTarget(this.sphere.mesh);
+            }
         } else {
             // Find dominoes that are currently toppling but not fallen
             // Focus on the most recently started one (the one that just began falling)
@@ -97,7 +105,13 @@ export class App {
             if (topplingDominoes.length > 0) {
                 // Prioritize dominoes that have just started falling
                 // In the domino effect, this would typically be the last one in the chain
-                this.lightingManager.setTrackingObject((topplingDominoes[topplingDominoes.length - 1] as DynamicNode).mesh);
+                const activeDomino = topplingDominoes[topplingDominoes.length - 1] as DynamicNode;
+                this.lightingManager.setTrackingObject(activeDomino.mesh);
+                
+                // Update follow camera target if in follow mode
+                if (this.isFollowCameraActive) {
+                    this.followCamera.setTarget(activeDomino.mesh);
+                }
             } else {
                 this.lightingManager.setTrackingObject(null);
             }
@@ -105,6 +119,58 @@ export class App {
         
         // Update the tracking spotlight to point at the active object
         this.lightingManager.updateTrackingSpotlight();
+    }
+
+    setupKeyBindings() {
+        $(document).on('keydown', (e) => {            
+            // Camera switching
+            if (e.key === 'c') {
+                this.toggleCamera();
+            }
+            
+            // Follow camera controls
+            if (this.isFollowCameraActive) {
+                const rotationSpeed = 0.1; // Radians
+                if (e.key === 'a' || e.key === 'ArrowLeft') {
+                    this.followCamera.rotateHorizontal(rotationSpeed);
+                }
+                if (e.key === 'd' || e.key === 'ArrowRight') {
+                    this.followCamera.rotateHorizontal(-rotationSpeed);
+                }
+            }
+        });
+    }
+    
+    toggleCamera() {
+        this.isFollowCameraActive = !this.isFollowCameraActive;
+        
+        if (this.isFollowCameraActive) {
+            // Switch to follow camera
+            this.activeCamera = this.followCamera;
+            
+            // Set target based on current active object
+            if (this.sphere && !this.sphere.collided) {
+                this.followCamera.setTarget(this.sphere.mesh);
+            } else {
+                const topplingDominoes = this.sceneGraph.children.filter(node => 
+                    node instanceof DynamicNode && 
+                    node.mesh.userData['domino'] && 
+                    node.mesh.userData['domino'].toppling && 
+                    !node.mesh.userData['domino'].fallen
+                );
+                
+                if (topplingDominoes.length > 0) {
+                    const activeDomino = topplingDominoes[topplingDominoes.length - 1] as DynamicNode;
+                    this.followCamera.setTarget(activeDomino.mesh);
+                } else if (this.sphere) {
+                    // If no toppling dominoes, fallback to the sphere even if it has collided
+                    this.followCamera.setTarget(this.sphere.mesh);
+                }
+            }
+        } else {
+            // Switch to top view camera
+            this.activeCamera = this.topCamera;
+        }
     }
 
     populateScene() {
@@ -132,6 +198,9 @@ export class App {
         
         // Set initial tracking object to be the sphere
         this.lightingManager.setTrackingObject(sphere.mesh);
+        
+        // Initialize the follow camera with the sphere as the target
+        this.followCamera.setTarget(sphere.mesh);
 
         const chain = buildCourse(
             this.scene,
