@@ -38,6 +38,7 @@ export class LightingManager {
         this.scene.add(this.pointLight);
         // add a helper for the point light
         const pointLightHelper = new THREE.PointLightHelper(this.pointLight, 1);
+        pointLightHelper.visible = false;
         this.scene.add(pointLightHelper);
         this.helpers.push(pointLightHelper);
 
@@ -56,6 +57,7 @@ export class LightingManager {
         this.scene.add(this.spotLight.target);
         // add a helper for the spot light
         const spotLightHelper = new THREE.SpotLightHelper(this.spotLight);
+        spotLightHelper.visible = false;
         this.scene.add(spotLightHelper);
         this.helpers.push(spotLightHelper);
         
@@ -85,6 +87,7 @@ export class LightingManager {
 
         // add a helper for the tracking spotlight
         this.trackingSpotlightHelper = new THREE.SpotLightHelper(this.trackingSpotlight);
+        this.trackingSpotlightHelper.visible = false;
         this.scene.add(this.trackingSpotlightHelper);
         this.helpers.push(this.trackingSpotlightHelper);
     }
