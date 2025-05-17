@@ -13,3 +13,11 @@ body, html {
   height: 100%;
   width: 100%;
 }
+
+#controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 300px;
+  z-index: 100;
+}

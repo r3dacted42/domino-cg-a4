@@ -1,4 +1,4 @@
-import { BoxGeometry, Mesh, Raycaster, Vector3 } from "three";
+import { BoxGeometry, Mesh, Quaternion, Raycaster, Vector3 } from "three";
 import type { Material } from "three";
 import { DynamicNode } from "./scenegraph";
 import { UP } from "../constants";
@@ -27,7 +27,11 @@ export class Domino extends DynamicNode {
         this.mesh.translateOnAxis(UP, -height / 2);
         this.fallenMat = fallenMat;
         this.fwdAxis = fwdAxis.clone().normalize();
-        this.mesh.rotateY(new Vector3(0, 0, 1).angleTo(fwdAxis));
+        
+        const defaultFwd = new Vector3(0, 0, 1);
+        const quaternion = new Quaternion().setFromUnitVectors(defaultFwd, this.fwdAxis);
+        this.mesh.quaternion.premultiply(quaternion);
+        
         this.toppleAxis = new Vector3()
             .crossVectors(UP, this.fwdAxis)
             .normalize();
@@ -67,15 +71,6 @@ export class Domino extends DynamicNode {
         const toppleAxis = new Vector3()
             .crossVectors(UP, this.fwdAxis)
             .normalize();
-        const minGap = (() => {
-            let gap = Infinity;
-            for (const c of this.collideNodes) {
-                if (!(c instanceof Domino)) continue;
-                gap = Math.min(gap, c.mesh.position.clone().sub(this.mesh.position).length());
-            }
-            return gap;
-        })();
-        const closeHitDist = Math.sqrt(minGap*minGap + depth*depth);
         const thresh = 50;
         let current = 0;
 
@@ -96,26 +91,24 @@ export class Domino extends DynamicNode {
                         false // don't recursively check children
                     );
 
-                    const closeHit = hits0.find(h => h.distance <= closeHitDist + 0.01) ?? hits1.find(h => h.distance <= closeHitDist + 0.01);
-                    if (closeHit || theta >= Math.PI / 2 || current >= thresh) {
+                    if (theta >= Math.PI / 2 || current >= thresh) {
                         this.fallen = true;
                         this.mesh.material = this.fallenMat;
                         return;
                     }
 
-                    const obstacleHit0 = hits0.find(h => h.distance <= height + 0.01)
+                    const obstacleHit0 = hits0.find(h => h.distance <= height + 0.01);
                     const obstacleHit1 = hits1.find(h => h.distance <= height + 0.01);
                     if (obstacleHit0 || obstacleHit1) {
                         if (obstacleHit0) {
-                            console.log(obstacleHit0);
-                            if (obstacleHit0.object instanceof Mesh 
+                            if (obstacleHit0.object instanceof Mesh
                                 && obstacleHit0.object.userData.domino
                                 && !obstacleHit0.object.userData.domino.toppling) {
                                 obstacleHit0.object.userData.domino.topple();
                             }
-                        }                        
+                        }
                         if (obstacleHit1) {
-                            if (obstacleHit1.object instanceof Mesh 
+                            if (obstacleHit1.object instanceof Mesh
                                 && obstacleHit1.object.userData.domino
                                 && !obstacleHit1.object.userData.domino.toppling) {
                                 obstacleHit1.object.userData.domino.topple();

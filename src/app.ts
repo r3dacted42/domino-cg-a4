@@ -4,8 +4,9 @@ import { OrbitalCamera } from './lib/cameras/orbitalcam';
 import { DynamicNode, SceneGraphNode } from './lib/physics/scenegraph';
 import { Sphere } from './lib/physics/sphere';
 import $ from 'jquery';
-import { buildSerpentineDominoCourse } from './buildCourse';
+import { buildCourse } from './buildCourse';
 import { LightingManager } from './lib/lighting';
+import { setupControls } from './lib/controls';
 
 export class App {
     canvas: HTMLCanvasElement;
@@ -51,7 +52,8 @@ export class App {
 
         this.lightingManager = new LightingManager(this.scene);
 
-        this.setupKeyBindings();
+        // this.setupKeyBindings();
+        setupControls(this);
 
         this.populateScene();
 
@@ -105,23 +107,6 @@ export class App {
         this.lightingManager.updateTrackingSpotlight();
     }
 
-    setupKeyBindings() {
-        $(document).on('keydown', (e) => {
-            if (e.key === 'p') {
-                this.lightingManager.togglePointLight();
-            }
-            if (e.key === 's') {
-                this.lightingManager.toggleSpotLight();
-            }
-            if (e.key === 't') {
-                this.lightingManager.toggleTrackingSpotlight();
-            }
-            if (e.key === 'h') {
-                this.lightingManager.toggleHelpers();
-            }
-        });
-    }
-
     populateScene() {
         const floor = new THREE.Mesh(
             new THREE.PlaneGeometry(50, 50),
@@ -148,14 +133,12 @@ export class App {
         // Set initial tracking object to be the sphere
         this.lightingManager.setTrackingObject(sphere.mesh);
 
-        const chain = buildSerpentineDominoCourse(
+        const chain = buildCourse(
             this.scene,
             this.sceneGraph,
             new THREE.Vector3(1, 0, 0),
             initDirection,
         );
         sphere.addCollidable(chain[0]);
-
-        sphere.roll();
     }
 }
