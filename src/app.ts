@@ -33,6 +33,10 @@ export class App {
     phongMaterial: THREE.MeshPhongMaterial;
     currentShadingModel: string = 'phong';
     
+    // Texture flag for dominos
+    useTexture: boolean = false;
+    woodTexture: THREE.Texture;
+    
     // Track all objects that need materials updated
     materialObjects: THREE.Mesh[] = [];
 
@@ -62,6 +66,12 @@ export class App {
         this.sceneGraph = new SceneGraphNode();
 
         this.lightingManager = new LightingManager(this.scene);
+        
+        // Load wood texture
+        const textureLoader = new THREE.TextureLoader();
+        this.woodTexture = textureLoader.load('src/assets/textures/wood.jpg');
+        this.woodTexture.wrapS = THREE.RepeatWrapping;
+        this.woodTexture.wrapT = THREE.RepeatWrapping;
         
         // Initialize materials for both shading models with the same properties
         const redColor = new THREE.Color(0xff0000);
@@ -149,6 +159,11 @@ export class App {
                 this.toggleCamera();
             }
             
+            // Texture toggle
+            if (e.key === 't') {
+                this.toggleTexture();
+            }
+            
             // Follow camera controls
             if (this.isFollowCameraActive) {
                 const rotationSpeed = 0.1; // Radians
@@ -194,6 +209,79 @@ export class App {
         }
     }
     
+    toggleTexture() {
+        this.useTexture = !this.useTexture;
+        
+        // Update material for all domino objects
+        for (const obj of this.materialObjects) {
+            if (obj.userData['domino']) {
+                const domino = obj.userData['domino'];
+                this.updateDominoMaterial(domino);
+            }
+        }
+    }
+    
+    updateDominoMaterial(domino: any) {
+        const color = new THREE.Color(0x156289);
+        const darkColor = new THREE.Color(color).multiplyScalar(0.6);
+        
+        // Create materials based on current shading model and texture setting
+        if (this.useTexture) {
+            if (this.currentShadingModel === 'gouraud') {
+                domino.standingMat = new THREE.MeshLambertMaterial({
+                    map: this.woodTexture,
+                    side: THREE.DoubleSide,
+                });
+                domino.fallenMat = new THREE.MeshLambertMaterial({
+                    map: this.woodTexture,
+                    side: THREE.DoubleSide,
+                    color: darkColor,
+                });
+            } else {
+                domino.standingMat = new THREE.MeshPhongMaterial({
+                    map: this.woodTexture,
+                    side: THREE.DoubleSide,
+                    shininess: 30
+                });
+                domino.fallenMat = new THREE.MeshPhongMaterial({
+                    map: this.woodTexture,
+                    side: THREE.DoubleSide,
+                    color: darkColor,
+                    shininess: 30
+                });
+            }
+        } else {
+            if (this.currentShadingModel === 'gouraud') {
+                domino.standingMat = new THREE.MeshLambertMaterial({
+                    color: color,
+                    side: THREE.DoubleSide,
+                });
+                domino.fallenMat = new THREE.MeshLambertMaterial({
+                    color: darkColor,
+                    side: THREE.DoubleSide,
+                });
+            } else {
+                domino.standingMat = new THREE.MeshPhongMaterial({
+                    color: color,
+                    side: THREE.DoubleSide,
+                    shininess: 30
+                });
+                domino.fallenMat = new THREE.MeshPhongMaterial({
+                    color: darkColor,
+                    side: THREE.DoubleSide,
+                    shininess: 30
+                });
+            }
+        }
+        
+        // Update the mesh material based on domino state
+        if (domino.fallen) {
+            domino.mesh.material = domino.fallenMat;
+        } else {
+            domino.mesh.material = domino.standingMat;
+        }
+    }
+    
     toggleShadingModel(model: string) {
         this.currentShadingModel = model;
         
@@ -207,6 +295,14 @@ export class App {
                 
                 let newMaterial: THREE.Material;
                 
+                if (obj.userData['domino']) {
+                    // Handle domino objects with special update method
+                    const domino = obj.userData['domino'];
+                    this.updateDominoMaterial(domino);
+                    continue;
+                }
+                
+                // Handle non-domino objects
                 if (model === 'gouraud') {
                     // Gouraud shading with MeshLambertMaterial
                     newMaterial = new THREE.MeshLambertMaterial({
@@ -225,59 +321,6 @@ export class App {
                 // Keep metadata and properties from original material
                 for (const key in material.userData) {
                     newMaterial.userData[key] = material.userData[key];
-                }
-                
-                // Handle special cases for dominoes
-                if (obj.userData['domino']) {
-                    const domino = obj.userData['domino'];
-                    if (domino.fallen) {
-                        // Create a darker fallen material
-                        const darkColor = new THREE.Color(color).multiplyScalar(0.6);
-                        if (model === 'gouraud') {
-                            newMaterial = new THREE.MeshLambertMaterial({
-                                color: darkColor,
-                                side: material.side,
-                            });
-                        } else {
-                            newMaterial = new THREE.MeshPhongMaterial({
-                                color: darkColor,
-                                shininess: 100,
-                                side: material.side,
-                            });
-                        }
-                    }
-                    
-                    // Update the material references in the domino
-                    if (domino.standingMat) {
-                        if (model === 'gouraud') {
-                            domino.standingMat = new THREE.MeshLambertMaterial({
-                                color: color,
-                                side: material.side,
-                            });
-                        } else {
-                            domino.standingMat = new THREE.MeshPhongMaterial({
-                                color: color,
-                                shininess: 100,
-                                side: material.side,
-                            });
-                        }
-                    }
-                    
-                    if (domino.fallenMat) {
-                        const darkColor = new THREE.Color(color).multiplyScalar(0.6);
-                        if (model === 'gouraud') {
-                            domino.fallenMat = new THREE.MeshLambertMaterial({
-                                color: darkColor,
-                                side: material.side,
-                            });
-                        } else {
-                            domino.fallenMat = new THREE.MeshPhongMaterial({
-                                color: darkColor,
-                                shininess: 100,
-                                side: material.side,
-                            });
-                        }
-                    }
                 }
                 
                 // Apply the new material
@@ -332,7 +375,9 @@ export class App {
             new THREE.Vector3(1, 0, 0),
             initDirection,
             this.materialObjects,
-            this.currentShadingModel
+            this.currentShadingModel,
+            this.useTexture,  // Pass texture flag
+            this.woodTexture  // Pass wood texture
         );
         sphere.addCollidable(chain[0]);
     }

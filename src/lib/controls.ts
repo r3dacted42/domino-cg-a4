@@ -21,7 +21,8 @@ export function setupControls(
         "spot light": true,
         "tracking light": true,
         "helpers": false,
-        "shading": "phong"  // Default to Phong shading
+        "shading": "phong",  // Default to Phong shading
+        "texture": false     // Default to no texture
     };
     const pointLtBinding = pane.addBinding(settings, 'point light');
     pointLtBinding.on('change', (_e) => {
@@ -49,5 +50,11 @@ export function setupControls(
     });
     shadingBinding.on('change', (e) => {
         app.toggleShadingModel(e.value);
+    });
+    
+    // Add texture toggle
+    const textureBinding = pane.addBinding(settings, 'texture');
+    textureBinding.on('change', (_e) => {
+        app.toggleTexture();
     });
 }

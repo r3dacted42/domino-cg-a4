@@ -10,6 +10,8 @@ export function buildCourse(
     initDirection: THREE.Vector3,
     materialObjects?: THREE.Mesh[],
     shadingModel?: string,
+    useTexture?: boolean,
+    woodTexture?: THREE.Texture,
 ): Domino[] {
 
     const dominos: Domino[] = [];
@@ -19,20 +21,61 @@ export function buildCourse(
     let standingMat: THREE.Material;
     let fallenMat: THREE.Material;
     
-    if (shadingModel === 'gouraud') {
-        // Gouraud shading - MeshLambertMaterial
-        standingMat = new THREE.MeshLambertMaterial({ color: 0x156289 });
-        fallenMat = new THREE.MeshLambertMaterial({ color: 0x0b3142 });
+    const color = new THREE.Color(0x156289);
+    const darkColor = new THREE.Color(0x0b3142);
+    
+    if (useTexture && woodTexture) {
+        // Use texture for materials
+        if (shadingModel === 'gouraud') {
+            // Gouraud shading with texture - MeshLambertMaterial
+            standingMat = new THREE.MeshLambertMaterial({ 
+                map: woodTexture,
+                side: THREE.DoubleSide
+            });
+            fallenMat = new THREE.MeshLambertMaterial({ 
+                map: woodTexture,
+                color: darkColor,
+                side: THREE.DoubleSide
+            });
+        } else {
+            // Default to Phong shading with texture - MeshPhongMaterial
+            standingMat = new THREE.MeshPhongMaterial({ 
+                map: woodTexture,
+                shininess: 30,
+                side: THREE.DoubleSide
+            });
+            fallenMat = new THREE.MeshPhongMaterial({ 
+                map: woodTexture,
+                color: darkColor,
+                shininess: 30,
+                side: THREE.DoubleSide
+            });
+        }
     } else {
-        // Default to Phong shading - MeshPhongMaterial
-        standingMat = new THREE.MeshPhongMaterial({ 
-            color: 0x156289,
-            shininess: 30
-        });
-        fallenMat = new THREE.MeshPhongMaterial({ 
-            color: 0x0b3142,
-            shininess: 30
-        });
+        // Use solid colors
+        if (shadingModel === 'gouraud') {
+            // Gouraud shading - MeshLambertMaterial
+            standingMat = new THREE.MeshLambertMaterial({ 
+                color: color,
+                side: THREE.DoubleSide
+            });
+            fallenMat = new THREE.MeshLambertMaterial({ 
+                color: darkColor,
+                side: THREE.DoubleSide
+            });
+        } else {
+            // Default to Phong shading - MeshPhongMaterial
+            standingMat = new THREE.MeshPhongMaterial({ 
+                color: color,
+                shininess: 30,
+                side: THREE.DoubleSide
+            });
+            fallenMat = new THREE.MeshPhongMaterial({ 
+                color: darkColor,
+                shininess: 30,
+                side: THREE.DoubleSide
+            });
+        }
     }
 
     function add(d: Domino) {
