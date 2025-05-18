@@ -8,6 +8,8 @@ import { buildCourse } from './buildCourse';
 import { LightingManager } from './lib/lighting';
 import { setupControls } from './lib/controls';
 
+import woodTexture from './assets/textures/wood.jpg';
+
 export class App {
     canvas: HTMLCanvasElement;
     scene: THREE.Scene;
@@ -69,7 +71,7 @@ export class App {
         
         // Load wood texture
         const textureLoader = new THREE.TextureLoader();
-        this.woodTexture = textureLoader.load('src/assets/textures/wood.jpg');
+        this.woodTexture = textureLoader.load(woodTexture);
         this.woodTexture.wrapS = THREE.RepeatWrapping;
         this.woodTexture.wrapT = THREE.RepeatWrapping;
         
