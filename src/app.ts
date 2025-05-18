@@ -27,6 +27,14 @@ export class App {
     
     // Track if follow camera is active
     isFollowCameraActive: boolean = false;
+    
+    // Materials for Gouraud (Lambert) and Phong shading
+    gouraudMaterial: THREE.MeshLambertMaterial;
+    phongMaterial: THREE.MeshPhongMaterial;
+    currentShadingModel: string = 'phong';
+    
+    // Track all objects that need materials updated
+    materialObjects: THREE.Mesh[] = [];
 
     constructor() {
         this.canvas = $("#main-canvas")[0] as HTMLCanvasElement;
@@ -54,6 +62,16 @@ export class App {
         this.sceneGraph = new SceneGraphNode();
 
         this.lightingManager = new LightingManager(this.scene);
+        
+        // Initialize materials for both shading models with the same properties
+        const redColor = new THREE.Color(0xff0000);
+        this.gouraudMaterial = new THREE.MeshLambertMaterial({
+            color: redColor,
+        });
+        this.phongMaterial = new THREE.MeshPhongMaterial({
+            color: redColor,
+            shininess: 100
+        });
 
         this.setupKeyBindings();
         setupControls(this);
@@ -70,6 +88,9 @@ export class App {
     add(obj: DynamicNode) {
         this.scene.add(obj.mesh);
         this.sceneGraph.add(obj);
+        if (obj.mesh instanceof THREE.Mesh) {
+            this.materialObjects.push(obj.mesh);
+        }
     }
 
     animate() {
@@ -172,6 +193,106 @@ export class App {
             this.activeCamera = this.topCamera;
         }
     }
+    
+    toggleShadingModel(model: string) {
+        this.currentShadingModel = model;
+        
+        // Update material for all objects based on the selected shading model
+        for (const obj of this.materialObjects) {
+            if (obj.material instanceof THREE.Material) {
+                const material = obj.material as THREE.Material;
+                const color = material.hasOwnProperty('color') 
+                    ? (material as any).color 
+                    : new THREE.Color(0xffffff);
+                
+                let newMaterial: THREE.Material;
+                
+                if (model === 'gouraud') {
+                    // Gouraud shading with MeshLambertMaterial
+                    newMaterial = new THREE.MeshLambertMaterial({
+                        color: color,
+                        side: material.side,
+                    });
+                } else {
+                    // Phong shading with MeshPhongMaterial
+                    newMaterial = new THREE.MeshPhongMaterial({
+                        color: color,
+                        shininess: 100,
+                        side: material.side,
+                    });
+                }
+                
+                // Keep metadata and properties from original material
+                for (const key in material.userData) {
+                    newMaterial.userData[key] = material.userData[key];
+                }
+                
+                // Handle special cases for dominoes
+                if (obj.userData['domino']) {
+                    const domino = obj.userData['domino'];
+                    if (domino.fallen) {
+                        // Create a darker fallen material
+                        const darkColor = new THREE.Color(color).multiplyScalar(0.6);
+                        if (model === 'gouraud') {
+                            newMaterial = new THREE.MeshLambertMaterial({
+                                color: darkColor,
+                                side: material.side,
+                            });
+                        } else {
+                            newMaterial = new THREE.MeshPhongMaterial({
+                                color: darkColor,
+                                shininess: 100,
+                                side: material.side,
+                            });
+                        }
+                    }
+                    
+                    // Update the material references in the domino
+                    if (domino.standingMat) {
+                        if (model === 'gouraud') {
+                            domino.standingMat = new THREE.MeshLambertMaterial({
+                                color: color,
+                                side: material.side,
+                            });
+                        } else {
+                            domino.standingMat = new THREE.MeshPhongMaterial({
+                                color: color,
+                                shininess: 100,
+                                side: material.side,
+                            });
+                        }
+                    }
+                    
+                    if (domino.fallenMat) {
+                        const darkColor = new THREE.Color(color).multiplyScalar(0.6);
+                        if (model === 'gouraud') {
+                            domino.fallenMat = new THREE.MeshLambertMaterial({
+                                color: darkColor,
+                                side: material.side,
+                            });
+                        } else {
+                            domino.fallenMat = new THREE.MeshPhongMaterial({
+                                color: darkColor,
+                                shininess: 100,
+                                side: material.side,
+                            });
+                        }
+                    }
+                }
+                
+                // Apply the new material
+                obj.material = newMaterial;
+            }
+        }
+        
+        // Update the sphere's material specifically
+        if (this.sphere) {
+            const sphereMaterial = this.currentShadingModel === 'phong' 
+                ? this.phongMaterial 
+                : this.gouraudMaterial;
+            this.sphere.mesh.material = sphereMaterial;
+        }
+    }
 
     populateScene() {
         const floor = new THREE.Mesh(
@@ -182,15 +303,18 @@ export class App {
         floor.position.y = -1;
         floor.receiveShadow = true;
         this.scene.add(floor);
+        this.materialObjects.push(floor);
 
         this.activeCamera.position.set(0, 5, 5);
 
         const initDirection = new THREE.Vector3(1, 0, 0);
+        const sphereMaterial = this.currentShadingModel === 'phong' 
+            ? this.phongMaterial 
+            : this.gouraudMaterial;
+            
         const sphere = new Sphere(
             initDirection,
-            new THREE.MeshStandardMaterial({
-                color: new THREE.Color(0xff0000),
-            }),
+            sphereMaterial,
         );
         sphere.mesh.position.set(-5, 0, 0);
         this.add(sphere);
@@ -207,6 +331,8 @@ export class App {
             this.sceneGraph,
             new THREE.Vector3(1, 0, 0),
             initDirection,
+            this.materialObjects,
+            this.currentShadingModel
         );
         sphere.addCollidable(chain[0]);
     }

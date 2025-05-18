@@ -21,6 +21,7 @@ export function setupControls(
         "spot light": true,
         "tracking light": true,
         "helpers": false,
+        "shading": "phong"  // Default to Phong shading
     };
     const pointLtBinding = pane.addBinding(settings, 'point light');
     pointLtBinding.on('change', (_e) => {
@@ -37,5 +38,16 @@ export function setupControls(
     const helpersBinding = pane.addBinding(settings, 'helpers');
     helpersBinding.on('change', (_e) => {
         app.lightingManager.toggleHelpers();
+    });
+    
+    // Add shading model dropdown
+    const shadingBinding = pane.addBinding(settings, 'shading', {
+        options: {
+            'Gouraud': 'gouraud',
+            'Phong': 'phong'
+        }
+    });
+    shadingBinding.on('change', (e) => {
+        app.toggleShadingModel(e.value);
     });
 }

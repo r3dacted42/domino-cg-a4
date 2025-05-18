@@ -13,6 +13,7 @@ const raycaster = new Raycaster();
 export class Domino extends DynamicNode {
     toppling: boolean = false;
     fallen: boolean = false;
+    standingMat: Material;
     fallenMat: Material;
     fwdAxis: Vector3;
     toppleAxis: Vector3;
@@ -25,6 +26,7 @@ export class Domino extends DynamicNode {
         this.mesh.userData['domino'] = this;
         this.mesh.castShadow = true;
         this.mesh.translateOnAxis(UP, -height / 2);
+        this.standingMat = standingMat;
         this.fallenMat = fallenMat;
         this.fwdAxis = fwdAxis.clone().normalize();
         

@@ -8,18 +8,42 @@ export function buildCourse(
     sceneGraph: SceneGraphNode,
     startPos: THREE.Vector3,
     initDirection: THREE.Vector3,
+    materialObjects?: THREE.Mesh[],
+    shadingModel?: string,
 ): Domino[] {
 
     const dominos: Domino[] = [];
     const spacing = 1;
 
-    const standingMat = new THREE.MeshStandardMaterial({ color: 0x156289 });
-    const fallenMat = new THREE.MeshStandardMaterial({ color: 0x0b3142 });
+    // Choose material type based on shading model
+    let standingMat: THREE.Material;
+    let fallenMat: THREE.Material;
+    
+    if (shadingModel === 'gouraud') {
+        // Gouraud shading - MeshLambertMaterial
+        standingMat = new THREE.MeshLambertMaterial({ color: 0x156289 });
+        fallenMat = new THREE.MeshLambertMaterial({ color: 0x0b3142 });
+    } else {
+        // Default to Phong shading - MeshPhongMaterial
+        standingMat = new THREE.MeshPhongMaterial({ 
+            color: 0x156289,
+            shininess: 30
+        });
+        fallenMat = new THREE.MeshPhongMaterial({ 
+            color: 0x0b3142,
+            shininess: 30
+        });
+    }
 
     function add(d: Domino) {
         scene.add(d.mesh);
         sceneGraph.add(d);
         dominos.push(d);
+        
+        // Add the domino mesh to materialObjects if provided
+        if (materialObjects && d.mesh instanceof THREE.Mesh) {
+            materialObjects.push(d.mesh);
+        }
     }
 
     function line(
