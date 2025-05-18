@@ -153,17 +153,7 @@ export class App {
     }
 
     setupKeyBindings() {
-        $(document).on('keydown', (e) => {            
-            // Camera switching
-            if (e.key === 'c') {
-                this.toggleCamera();
-            }
-            
-            // Texture toggle
-            if (e.key === 't') {
-                this.toggleTexture();
-            }
-            
+        $(document).on('keydown', (e) => {
             // Follow camera controls
             if (this.isFollowCameraActive) {
                 const rotationSpeed = 0.1; // Radians
